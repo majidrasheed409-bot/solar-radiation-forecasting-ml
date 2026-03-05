@@ -1,6 +1,3 @@
-Here is a **clean, professional README you can place in your GitHub repository**. You can copy this directly into a file called **README.md**.
-
----
 
 # Solar Radiation Forecasting using Machine Learning
 
@@ -122,7 +119,7 @@ Possible extensions include:
 ---
 
 ## Author
-
+Majid Rasheed
 MSc Artificial Intelligence & Data Science
 University of Hull
 
@@ -133,5 +130,3 @@ Research interests include:
 * Smart grid optimization and infrastructure AI
 
 ---
-
-If you want, I can also help you make **two small improvements that will make your GitHub project look much more professional to employers** (they take about **10 minutes but make a big difference**).
