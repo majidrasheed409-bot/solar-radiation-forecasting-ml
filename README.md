@@ -1,132 +1,192 @@
+# Solar Radiation Forecasting – West Africa
+**MSc Dissertation | Majid Rasheed | University of Hull | December 2025**
 
-# Solar Radiation Forecasting using Machine Learning
-
-## Overview
-
-This project develops machine learning models to **forecast daily solar radiation using meteorological time-series data**. Accurate solar radiation forecasting is important for **renewable energy planning, solar power generation management, and smart grid optimization**.
-
-The project investigates the performance of **ensemble machine learning models and deep learning architectures** under limited data conditions.
-
-This work was completed as part of the MSc dissertation in **Artificial Intelligence & Data Science at the University of Hull**.
+Machine Learning for Daily Solar Radiation Forecasting in West Africa:  
+*A Comparative Analysis of Tree-Based and Deep Learning Approaches*
 
 ---
 
-## Objectives
+## Project Structure
 
-The main objectives of this project are:
-
-* Forecast daily solar radiation using meteorological variables
-* Compare traditional machine learning models with deep learning approaches
-* Evaluate forecasting performance under **limited data conditions**
-* Analyze model robustness and bias–variance trade-offs
-
----
-
-## Dataset
-
-The dataset consists of **meteorological time-series observations**, including variables such as:
-
-* Temperature
-* Humidity
-* Wind speed
-* Atmospheric pressure
-* Solar radiation measurements
-
-Feature engineering was applied to generate **lag-based and seasonal features** to improve predictive performance.
-
----
-
-## Methodology
-
-### Data Preprocessing
-
-The following preprocessing steps were applied:
-
-* Data cleaning and handling missing values
-* Feature scaling and normalization
-* Creation of lag features for time-series forecasting
-* Chronological train–test split to avoid data leakage
+```
+solar_forecasting/
+├── config/
+│   └── settings.py          # All hyperparameters, feature sets, paths
+├── src/
+│   ├── data_ingestion.py    # World Bank energydata.info API + caching
+│   ├── feature_engineering.py  # 81-variable feature pipeline
+│   ├── models.py            # RF, XGBoost, LSTM, CNN-LSTM classes
+│   ├── evaluation.py        # R², RMSE, MAE, MAPE + reporting
+│   └── visualisation.py     # Figures 1–9 from the dissertation
+├── scripts/
+│   ├── train.py             # Full training pipeline (CLI)
+│   └── predict.py           # Inference on new data (CLI)
+├── tests/
+│   └── test_pipeline.py     # Pytest unit tests
+├── data_cache/              # Auto-created: cached CSV downloads
+├── saved_models/            # Auto-created: serialised model .pkl files
+├── results/                 # Auto-created: results.csv
+├── figures/                 # Auto-created: all 9 dissertation figures
+├── requirements.txt
+└── README.md
+```
 
 ---
 
-### Machine Learning Models
+## Quick Start
 
-The following models were implemented and evaluated:
+### 1. Install dependencies
+```bash
+pip install -r requirements.txt
+```
 
-**Ensemble Models**
+> **GPU users:** replace `tensorflow` with `tensorflow-gpu` in `requirements.txt`.
 
-* Random Forest
-* XGBoost
+### 2. Train all models (downloads data automatically)
+```bash
+python scripts/train.py
+```
 
-**Deep Learning Models**
+This runs the full 24-experiment matrix (4 models × 3 countries × 2 feature sets),
+saves results to `results/results.csv`, and generates all figures to `figures/`.
 
-* LSTM (Long Short-Term Memory)
-* CNN–LSTM hybrid model
+### 3. Train only tree-based models (fastest, best results)
+```bash
+python scripts/train.py --models rf xgboost --feature-sets IMPORTANT
+```
 
-These models were selected to compare **tree-based ensemble learning with deep neural time-series architectures**.
+### 4. Predict on new data
+```bash
+python scripts/predict.py \
+    --model-path saved_models/xgboost_nigeria_IMPORTANT.pkl \
+    --input data_cache/data_Nigeria_2021_2023.csv \
+    --country nigeria \
+    --output results/predictions.csv
+```
 
----
+### 5. Quick smoke test (validates a saved model)
+```bash
+python scripts/predict.py --smoke-test --country nigeria
+```
 
-## Model Evaluation
-
-Model performance was evaluated using standard regression metrics:
-
-* **R² (Coefficient of Determination)**
-* **RMSE (Root Mean Square Error)**
-* **MAE (Mean Absolute Error)**
-* **MAPE (Mean Absolute Percentage Error)**
-
-The best-performing models achieved approximately:
-
-**R² ≈ 0.98**
-
-indicating strong predictive capability on the test dataset.
-
----
-
-
-## Key Contributions
-
-This project demonstrates:
-
-* A complete **machine learning pipeline for renewable energy forecasting**
-* Comparative evaluation of **ensemble vs deep learning approaches**
-* Robust methodology using **chronological validation**
-* Practical insights into **ML performance under limited data conditions**
+### 6. Run tests
+```bash
+pytest tests/ -v
+```
 
 ---
 
-## Applications
+## CLI Reference
 
-The methodology developed in this project can support:
+### `scripts/train.py`
 
-* Solar power generation forecasting
-* Renewable energy grid integration
-* Smart grid planning and operation
-* Energy demand–supply optimization
+| Argument | Default | Description |
+|---|---|---|
+| `--models` | all | `rf xgboost lstm cnn_lstm` |
+| `--countries` | all | `nigeria ghana senegal` |
+| `--feature-sets` | all | `BASE IMPORTANT FULL` |
+| `--no-cache` | False | Force re-download from energydata.info |
+| `--no-figures` | False | Skip figure generation |
+| `--no-save-models` | False | Do not persist models to disk |
+
+### `scripts/predict.py`
+
+| Argument | Description |
+|---|---|
+| `--model-path` | Path to a `.pkl` saved model |
+| `--input` | CSV of new daily meteorological data |
+| `--country` | `nigeria` / `ghana` / `senegal` |
+| `--feature-set` | `BASE` / `IMPORTANT` / `FULL` (default: `IMPORTANT`) |
+| `--output` | Output CSV path (default: `results/predictions.csv`) |
+| `--smoke-test` | Quick validation with cached data |
+
+---
+
+## Module API
+
+```python
+from src.data_ingestion      import load_all_countries
+from src.feature_engineering import engineer_features, get_feature_sets, chronological_split
+from src.models              import XGBoostModel, RandomForestModel
+from src.evaluation          import evaluate_model, print_summary
+from src.visualisation       import save_all_figures
+
+# 1. Load data
+solar_data = load_all_countries(use_cache=True)
+
+# 2. Engineer features
+df_eng = engineer_features(solar_data["nigeria"])
+
+# 3. Split
+train_df, test_df = chronological_split(df_eng, test_size=0.20)
+
+# 4. Select features
+fs     = get_feature_sets(df_eng)
+feats  = fs["IMPORTANT"]
+X_train, y_train = train_df[feats], train_df["GHI_kWh_m2"]
+X_test,  y_test  = test_df[feats],  test_df["GHI_kWh_m2"]
+
+# 5. Train & evaluate
+model = XGBoostModel()
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+result = evaluate_model(y_test, y_pred, "XGBoost", "nigeria", "IMPORTANT")
+print(result)
+# → {'R2': 0.9777, 'RMSE': 7.41, 'MAE': ..., 'MAPE': ..., 'Rating': 'Excellent'}
+
+# 6. Save / load model
+model.save("saved_models/xgboost_nigeria_IMPORTANT.pkl")
+model2 = XGBoostModel.load("saved_models/xgboost_nigeria_IMPORTANT.pkl")
+```
 
 ---
 
-## Future Work
+## Key Results (Dissertation Chapter 3)
 
-Possible extensions include:
+| Model | Best R² | Config | RMSE (kWh/m²) |
+|---|---|---|---|
+| **XGBoost** | **0.9777** | Nigeria – IMPORTANT | **7.41** |
+| Random Forest | 0.9728 | Nigeria – IMPORTANT | 8.19 |
+| LSTM | 0.0523 | All configs | — |
+| CNN-LSTM | 0.0525 | All configs | — |
 
-* Probabilistic forecasting for uncertainty quantification
-* Hybrid physical–machine learning models
-* Integration with real-time energy management systems
-* Application to larger multi-site renewable datasets
+Neural networks are included for completeness; their poor performance is attributable
+to the limited training set size (~570 samples vs the ~17,000 minimum recommended
+for the LSTM architecture employed — see §4.2).
+
+---
+
+## Feature Engineering Summary (81 features)
+
+| Category | Count | Examples |
+|---|---|---|
+| Temporal | 12 | Month, Quarter, Season, DayOfYear_sin/cos |
+| Lag | 24 | GHI_lag1, GHI_lag7, DNI_lag1, Temp_lag30 |
+| Rolling | 36 | GHI_roll7_mean, GHI_roll14_std, DNI_roll30_max |
+| Interaction | 9 | Clearness_Index, DNI_DHI_Ratio, Diffuse_Fraction, DTR |
+
+The **IMPORTANT** set (top-20 by mutual information) consistently outperforms
+both BASE (11) and FULL (81), reflecting the bias-variance optimum at
+intermediate feature complexity.
 
 ---
 
-## Author
-Majid Rasheed
-MSc Artificial Intelligence & Data Science
-University of Hull
+## Data Source
 
-Research interests include:
-
-* Machine learning for renewable energy systems
-* Time-series forecasting under uncertainty
-* Smart grid optimization and infrastructure AI
+World Bank energydata.info platform – "Solar Development in Sub-Saharan Africa"  
+Stations: Bauchi & Kano (Nigeria) · Navrongo & Sunyani (Ghana) · Ourossogui & Tambacounda (Senegal)  
+Period: September 2021 – November 2023 | Resolution: daily aggregated
 
 ---
+
+## Deployment Recommendations (Dissertation §5.2)
+
+1. **Primary model:** XGBoost + IMPORTANT feature set
+2. **Ensemble partner:** Random Forest for robustness
+3. **Retraining schedule:** Quarterly, aligned with seasonal transitions
+4. **Hardware requirement:** Standard desktop CPU (<3 s training, <500 MB RAM)
+5. **Neural networks:** Revisit when ≥17,000 training samples are available
+
+---
+
+*University of Hull · MSc AI and Data Science · 2025*
