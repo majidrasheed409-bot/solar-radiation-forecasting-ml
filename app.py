@@ -401,8 +401,8 @@ elif page == "📈 Forecast":
     y_pred = results["y_pred"]
     y_test = results["y_test"]
 
-    fig = make_subplots(rows=2, cols=1, row_heights=[0.7,0.3],
-                        shared_xaxis=True, vertical_spacing=0.06)
+   fig = make_subplots(rows=2, cols=1, shared_xaxis=True, vertical_spacing=0.06,
+                    specs=[[{"type":"scatter"}],[{"type":"bar"}]])
     fig.add_trace(go.Scatter(x=train["Date"], y=train[TARGET], name="Training",
                               line=dict(color="#30363D",width=1.2),
                               fill="tozeroy", fillcolor="rgba(48,54,61,0.3)"), row=1, col=1)
