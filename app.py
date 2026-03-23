@@ -253,6 +253,14 @@ PLOTLY_LAYOUT = dict(
     margin=dict(l=40, r=20, t=40, b=40),
     legend=dict(bgcolor="rgba(0,0,0,0)", bordercolor="#30363D"),
 )
+# No xaxis/yaxis — required for make_subplots and scatter_mapbox
+PLOTLY_LAYOUT_SIMPLE = dict(
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(22,27,34,0.6)",
+    font=dict(family="DM Sans, sans-serif", color="#E6EDF3", size=12),
+    margin=dict(l=40, r=20, t=40, b=40),
+    legend=dict(bgcolor="rgba(0,0,0,0)", bordercolor="#30363D"),
+)
 COUNTRY_COLORS = {"Nigeria": "#F5A623", "Ghana": "#4ECDC4", "Senegal": "#58A6FF"}
 
 
@@ -491,7 +499,7 @@ elif page == "📈 Forecast":
         row=2, col=1,
     )
     fig.add_hline(y=0, line_dash="solid", line_color="#8B949E", row=2, col=1)
-    fig.update_layout(**PLOTLY_LAYOUT, height=520,
+    fig.update_layout(**PLOTLY_LAYOUT_SIMPLE, height=520,
                       title=f"GHI Forecast — {cfg[0]} | {cfg[1]} | {cfg[2]}")
     fig.update_yaxes(title_text="GHI (kWh/m²)", row=1, col=1)
     fig.update_yaxes(title_text="Residual",      row=2, col=1)
@@ -727,7 +735,7 @@ elif page == "🗺️ Geographic":
         color_discrete_map=COUNTRY_COLORS,
         size=[15]*6, zoom=3, height=380, mapbox_style="carto-darkmatter",
     )
-    fig_map.update_layout(**PLOTLY_LAYOUT, margin=dict(l=0, r=0, t=10, b=0))
+    fig_map.update_layout(**PLOTLY_LAYOUT_SIMPLE, margin=dict(l=0, r=0, t=10, b=0))
     st.plotly_chart(fig_map, use_container_width=True)
 
 
